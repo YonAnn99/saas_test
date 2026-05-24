@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Ventas del Mes</h3>
+        <p class="text-3xl font-bold text-gray-900 mt-2">$0.00</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Productos en Stock</h3>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_products }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <h3 class="text-gray-500 text-sm font-medium uppercase tracking-wider">Clientes Activos</h3>
+        <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_customers }}</p>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-900">Inventario Reciente</h2>
+        <a href="#" class="text-sm text-blue-600 hover:underline">Ver todo</a>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3">SKU</th>
+                    <th scope="col" class="px-6 py-3">Producto</th>
+                    <th scope="col" class="px-6 py-3">Stock</th>
+                    <th scope="col" class="px-6 py-3">Precio Venta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in recent_products %}
+                <tr class="bg-white border-b hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{{ product.sku }}</td>
+                    <td class="px-6 py-4">{{ product.name }}</td>
+                    <td class="px-6 py-4">
+                        {% if product.stock <= product.min_stock_alert %}
+                            <span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ product.stock }} (¡Bajo!)</span>
+                        {% else %}
+                            <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ product.stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">${{ product.sale_price }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500 italic">Aún no hay productos en el almacén.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+    <h2 class="text-xl font-bold text-gray-900 mb-2">Bienvenido a tu panel de control</h2>
+    <p class="text-gray-600">Aquí es donde conectaremos las bases de datos para que los números se actualicen en tiempo real, y donde tu agente de IA reportará sus actividades.</p>
+</div>
+<div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mt-6">
+    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        Asistente de Ventas IA
+    </h2>
+    
+    <div id="chat-box" class="h-64 overflow-y-auto mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50 flex flex-col space-y-3">
+        <div class="self-start bg-white border border-gray-200 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[80%]">
+            <p class="text-sm text-gray-800">¡Hola! Soy tu asistente virtual. ¿En qué te puedo ayudar hoy?</p>
+        </div>
+    </div>
+
+    <div class="flex gap-2">
+        <input type="text" id="chat-input" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ej. ¿Cuántas láminas transparentes tenemos?..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        
+        <button onclick="sendMessage()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+            Enviar
+        </button>
+    </div>
+</div>
+
+<script>
+    // 🧠 1. Creamos la memoria del chat en el navegador
+    let historialChat = [];
+
+    async function sendMessage() {
+        const inputField = document.getElementById('chat-input');
+        const chatBox = document.getElementById('chat-box');
+        const message = inputField.value.trim();
+
+        if (!message) return;
+
+        // Mostrar el mensaje en pantalla
+        chatBox.innerHTML += `
+            <div class="self-end bg-blue-600 text-white p-3 rounded-lg rounded-tr-none shadow-sm max-w-[80%]">
+                <p class="text-sm">${message}</p>
+            </div>
+        `;
+        inputField.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const typingId = "typing-" + Date.now();
+        chatBox.innerHTML += `
+            <div id="${typingId}" class="self-start bg-gray-200 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[80%] animate-pulse">
+                <p class="text-sm text-gray-500">Consultando la base de datos...</p>
+            </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            // 2. Mandamos el mensaje actual Y TODO EL HISTORIAL al servidor
+            const response = await fetch('/api/chat/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message: message, 
+                    history: historialChat // Enviamos la memoria
+                })
+            });
+            const data = await response.json();
+
+            // 3. Guardamos esta interacción en la memoria para la próxima vez
+            historialChat.push({"role": "user", "content": message});
+            historialChat.push({"role": "assistant", "content": data.reply});
+
+            document.getElementById(typingId).remove();
+            
+            chatBox.innerHTML += `
+                <div class="self-start bg-white border border-gray-200 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[80%]">
+                    <p class="text-sm text-gray-800 whitespace-pre-wrap">${data.reply}</p>
+                </div>
+            `;
+        } catch (error) {
+            document.getElementById(typingId).remove();
+            chatBox.innerHTML += `
+                <div class="self-start bg-red-100 border border-red-200 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[80%]">
+                    <p class="text-sm text-red-800">Error de conexión.</p>
+                </div>
+            `;
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+{% endblock %}
