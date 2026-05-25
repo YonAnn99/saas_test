@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-black text-gray-900">Control de Inventario</h1>
+    <p class="text-gray-600 mt-1">Administra las existencias, costos y precios de tus productos en tiempo real.</p>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+        <div>
+            <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider">Total de Artículos</h3>
+            <p class="text-3xl font-black text-gray-900 mt-1">{{ total_products }}</p>
+        </div>
+        <div class="p-3 rounded-full bg-blue-50 text-blue-600">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+        <div>
+            <h3 class="text-gray-500 text-sm font-bold uppercase tracking-wider">Alertas de Stock Bajo</h3>
+            <p class="text-3xl font-black {% if low_stock_count > 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">{{ low_stock_count }}</p>
+        </div>
+        <div class="p-3 rounded-full {% if low_stock_count > 0 %}bg-red-50 text-red-600 animate-pulse{% else %}bg-green-50 text-green-600{% endif %}">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-6">
+    <h2 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+        <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        Registrar Nuevo Artículo
+    </h2>
+    
+    <form action="{% url 'add_product' %}" method="POST">
+        {% csrf_token %} 
+        
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+            <div class="md:col-span-2">
+                <label for="name" class="block mb-1 text-xs font-bold text-gray-700 uppercase">Nombre del Producto</label>
+                <input type="text" name="name" id="name" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="Ej. Tubo de PVC 1 pulgada" required>
+            </div>
+            <div>
+                <label for="stock" class="block mb-1 text-xs font-bold text-gray-700 uppercase">Stock Inicial</label>
+                <input type="number" name="stock" id="stock" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="0" required>
+            </div>
+            <div>
+                <label for="cost_price" class="block mb-1 text-xs font-bold text-gray-700 uppercase">Costo ($)</label>
+                <input type="number" step="0.01" name="cost_price" id="cost_price" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="0.00" required>
+            </div>
+            <div>
+                <label for="price" class="block mb-1 text-xs font-bold text-gray-700 uppercase">Precio Venta ($)</label>
+                <input type="number" step="0.01" name="price" id="price" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="0.00" required>
+            </div>
+        </div>
+        
+        <div class="flex justify-end">
+            <button type="submit" class="text-white bg-green-600 hover:bg-green-700 font-bold rounded-lg text-sm px-5 py-2.5 shadow-sm transition-colors">
+                Guardar en Almacén
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <h2 class="text-lg font-bold text-gray-900">Catálogo General</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3">SKU / Código</th>
+                    <th class="px-6 py-3">Descripción</th>
+                    <th class="px-6 py-3 text-center">Existencias</th>
+                    <th class="px-6 py-3 text-right">Costo</th>
+                    <th class="px-6 py-3 text-right">P. Venta</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+                {% for product in products %}
+                <tr class="hover:bg-gray-50/70 transition-colors">
+                    <td class="px-6 py-4 font-mono text-xs text-gray-900 font-bold tracking-wider">{{ product.sku }}</td>
+                    <td class="px-6 py-4 font-medium text-gray-800">{{ product.name }}</td>
+                    <td class="px-6 py-4 text-center">
+                        {% if product.stock <= product.min_stock_alert %}
+                            <span class="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full">{{ product.stock }} (Bajo)</span>
+                        {% else %}
+                            <span class="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full">{{ product.stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right font-medium">${{ product.cost_price }}</td>
+                    <td class="px-6 py-4 text-right font-bold text-gray-900">${{ product.sale_price }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-gray-500 italic bg-gray-50/30">
+                        No hay productos registrados en este almacén todavía. Use el formulario de arriba para agregar el primero.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

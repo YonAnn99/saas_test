@@ -33,7 +33,9 @@ class Customer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('tenant', 'email')
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'email'], name='unique_tenant_email')
+        ]
 
     def __str__(self):
         return self.name
@@ -53,7 +55,9 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('tenant', 'sku')
+        constraints = [
+            models.UniqueConstraint(fields=['tenant', 'sku'], name='unique_tenant_sku')
+        ]
 
     def __str__(self):
         return f"[{self.sku}] {self.name} - Stock: {self.stock}"
@@ -63,7 +67,7 @@ class Product(models.Model):
 # ==========================================
 class Sale(models.Model):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='sales')
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -81,9 +85,21 @@ class SaleItem(models.Model):
         return f"{self.quantity}x {self.product.name}"
 
 class FinancialMovement(models.Model):
+    CATEGORY_CHOICES = [
+        ('venta', 'Venta Directa'),
+        ('gasto', 'Gasto Operativo'),
+        ('nomina', 'Pago de Nómina'),
+        ('proveedor', 'Pago a Proveedores'),
+        ('ajuste', 'Ajuste de Inventario'),
+    ]
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
     sale = models.ForeignKey(Sale, on_delete=models.SET_NULL, null=True, blank=True)
-    movement_type = models.CharField(max_length=10) # 'income' o 'expense'
+    movement_type = models.CharField(max_length=10)
+    movement_category = models.CharField(
+        max_length=20, 
+        choices=CATEGORY_CHOICES, 
+        default='venta'
+    )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     description = models.CharField(max_length=255)
     due_date = models.DateField(null=True, blank=True)
@@ -91,4 +107,46 @@ class FinancialMovement(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.movement_type.upper()} - ${self.amount}"
+        return f"{self.movement_type.upper()} - ${self.amount}" 
+    
+
+# ==========================================
+# 5. MÓDULO DE COMPRAS Y PROVEEDORES
+# ==========================================
+
+class Supplier(models.Model):
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    contact_name = models.CharField(max_length=200, blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class PurchaseOrder(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente de Recepción'),
+        ('received', 'Mercancía Recibida'),
+        ('cancelled', 'Cancelada'),
+    ]
+
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True)
+    total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    received_at = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Orden #{self.id} - {self.supplier.name if self.supplier else 'Sin Proveedor'}"
+
+class PurchaseItem(models.Model):
+    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name}"

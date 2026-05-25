@@ -18,9 +18,25 @@ from django.contrib import admin
 from django.urls import path
 from erp.views import dashboard_view
 from erp.views import api_chat
+from erp.views import add_product
+from erp.views import register_tenant_view
+from django.contrib.auth import views as auth_views
+from erp.views import inventory_view , pos_view , process_sale_api,sales_chart_api,purchases_view, create_purchase_order_api
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', dashboard_view, name='dashboard'),
     path('api/chat/', api_chat, name='api_chat'),
+    path('add_product/', add_product, name='add_product'),
+    path('register/' , register_tenant_view, name='register_tenant'),
+    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    path('inventario/' , inventory_view, name='inventory'),
+    path('ventas/' , pos_view, name='pos'),
+    path('api/process_sale/', process_sale_api, name='process_sale_api'),
+    path('api/sales_chart/', sales_chart_api, name='sales_chart_api'),
+    path('compras/' , purchases_view, name='purchases'),
+    path('compras/registrar-orden/' , create_purchase_order_api, name='create_purchase_order'),
+
+
 ]

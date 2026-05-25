@@ -117,3 +117,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# ==========================================
+# CONFIGURACIÓN DE AUTENTICACIÓN Y REDIRECCIONES
+# ==========================================
+LOGIN_REDIRECT_URL = 'dashboard'  # A dónde ir al iniciar sesión exitosamente
+LOGOUT_REDIRECT_URL = 'login'     # A dónde ir al cerrar sesión
+LOGIN_URL = 'login'               # A dónde mandar a los intrusos que intentan entrar sin cuenta

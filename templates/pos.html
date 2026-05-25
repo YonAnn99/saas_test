@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% csrf_token %}
+<div class="mb-4">
+    <h1 class="text-3xl font-black text-gray-900">Punto de Venta</h1>
+    <p class="text-gray-600 mt-1">Selecciona los productos para agregarlos al ticket de cobro.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-180px)]">
+    
+    <div class="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-900">Productos Disponibles</h2>
+            <input type="text" id="search-product" placeholder="Buscar producto por nombre o SKU..." class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/2 p-2 shadow-sm">
+        </div>
+        
+        <div class="p-4 overflow-y-auto flex-grow grid grid-cols-2 md:grid-cols-3 gap-4 content-start">
+            {% for product in products %}
+            <button onclick="addToCart('{{ product.id }}', '{{ product.name }}', {{ product.sale_price }})" class="flex flex-col text-left p-4 border border-gray-200 rounded-xl hover:border-blue-500 hover:shadow-md transition-all bg-white group">
+                <span class="text-xs font-bold text-gray-400 mb-1">{{ product.sku }}</span>
+                <span class="font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-700">{{ product.name }}</span>
+                <div class="mt-auto pt-3 flex justify-between items-end w-full">
+                    <span class="text-sm font-medium text-gray-500">Stock: {{ product.stock }}</span>
+                    <span class="text-lg font-black text-green-600">${{ product.sale_price }}</span>
+                </div>
+            </button>
+            {% empty %}
+            <div class="col-span-full p-8 text-center text-gray-500 italic bg-gray-50 rounded-lg">
+                No hay productos con stock disponible para vender.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col h-full">
+        <div class="p-4 border-b border-gray-100 bg-gray-900 text-white rounded-t-lg flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <h2 class="text-lg font-bold tracking-wider">Ticket de Cobro</h2>
+        </div>
+        
+        <div id="cart-items" class="flex-grow overflow-y-auto p-4 space-y-3 bg-gray-50/30">
+            <div class="text-center text-gray-400 italic text-sm mt-10" id="empty-cart-msg">
+                El carrito está vacío.<br>Haz clic en los productos para agregarlos.
+            </div>
+        </div>
+        
+        <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600 font-medium">Subtotal</span>
+                <span class="text-gray-900 font-bold" id="cart-subtotal">$0.00</span>
+            </div>
+            <div class="flex justify-between items-center mb-4 text-sm">
+                <span class="text-gray-500">Impuestos (Calculado)</span>
+                <span class="text-gray-500" id="cart-tax">$0.00</span>
+            </div>
+            <div class="flex justify-between items-end mb-6 border-t border-gray-200 pt-3">
+                <span class="text-xl font-bold text-gray-900">Total</span>
+                <span class="text-4xl font-black text-green-600" id="cart-total">$0.00</span>
+            </div>
+            
+            <button onclick="processCheckout()" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-xl text-lg px-5 py-4 transition-transform transform hover:scale-[1.02] shadow-lg flex justify-center items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                Cobrar Venta
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. La Memoria del Carrito
+    let cart = [];
+
+    // 2. Función para agregar productos al tocar los botones
+    function addToCart(id, name, price) {
+        // Parseamos el precio para asegurarnos de que sea un número (float)
+        const itemPrice = parseFloat(price);
+        
+        // Buscamos si el producto ya existe en la memoria del carrito
+        const existingItem = cart.find(item => item.id === id);
+        
+        if (existingItem) {
+            // Si ya existe, le sumamos 1 a la cantidad y recalculamos su subtotal
+            existingItem.quantity += 1;
+            existingItem.subtotal = existingItem.quantity * itemPrice;
+        } else {
+            // Si es nuevo, lo registramos desde cero
+            cart.push({
+                id: id,
+                name: name,
+                price: itemPrice,
+                quantity: 1,
+                subtotal: itemPrice
+            });
+        }
+        
+        // Refrescamos la pantalla
+        updateCartUI();
+    }
+
+    // 3. Función para los botones de [+] y [-] dentro del ticket
+    function changeQuantity(id, delta) {
+        const item = cart.find(item => item.id === id);
+        if (item) {
+            item.quantity += delta;
+            item.subtotal = item.quantity * item.price;
+            
+            // Si la cantidad llega a cero, lo borramos del carrito
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== id);
+            }
+        }
+        updateCartUI();
+    }
+
+    // 4. El Pintor de Pantalla (Refresca el HTML)
+    function updateCartUI() {
+        const cartItemsContainer = document.getElementById('cart-items');
+        
+        // Limpiamos la lista visual por completo
+        cartItemsContainer.innerHTML = '';
+        
+        // Si no hay nada, mostramos el mensaje de vacío y ponemos los totales en cero
+        if (cart.length === 0) {
+            cartItemsContainer.innerHTML = `
+                <div class="text-center text-gray-400 italic text-sm mt-10">
+                    El carrito está vacío.<br>Haz clic en los productos para agregarlos.
+                </div>
+            `;
+            document.getElementById('cart-subtotal').innerText = '$0.00';
+            document.getElementById('cart-tax').innerText = '$0.00';
+            document.getElementById('cart-total').innerText = '$0.00';
+            return;
+        }
+
+        let sumSubtotal = 0;
+
+        // Recorremos el carrito y dibujamos cada producto
+        cart.forEach(item => {
+            sumSubtotal += item.subtotal;
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex justify-between items-center bg-white p-3 rounded-lg border border-gray-200 shadow-sm';
+            itemDiv.innerHTML = `
+                <div class="flex-1 pr-2">
+                    <h4 class="text-sm font-bold text-gray-900 leading-tight">${item.name}</h4>
+                    <p class="text-xs text-gray-500 mt-1">$${item.price.toFixed(2)} c/u</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
+                        <button onclick="changeQuantity('${item.id}', -1)" class="w-6 h-6 text-gray-600 hover:bg-white hover:shadow rounded flex items-center justify-center font-bold transition-all">-</button>
+                        <span class="w-6 text-center text-sm font-bold text-gray-900">${item.quantity}</span>
+                        <button onclick="changeQuantity('${item.id}', 1)" class="w-6 h-6 text-gray-600 hover:bg-white hover:shadow rounded flex items-center justify-center font-bold transition-all">+</button>
+                    </div>
+                    <span class="font-bold text-gray-900 w-16 text-right">$${item.subtotal.toFixed(2)}</span>
+                </div>
+            `;
+            cartItemsContainer.appendChild(itemDiv);
+        });
+
+        // 5. Matemáticas finales
+        const tax = sumSubtotal * 0.16; // Calculamos el 16% de IVA
+        const total = sumSubtotal + tax;
+
+        // Escribimos los números en la pantalla (toFixed(2) asegura que siempre haya 2 decimales)
+        document.getElementById('cart-subtotal').innerText = '$' + sumSubtotal.toFixed(2);
+        document.getElementById('cart-tax').innerText = '$' + tax.toFixed(2);
+        document.getElementById('cart-total').innerText = '$' + total.toFixed(2);
+    }
+
+    // 6. Ejecución del Cobro
+    async function processCheckout() {
+        if (cart.length === 0) {
+            alert("No puedes cobrar un carrito vacío.");
+            return;
+        }
+
+        // Cambiamos el texto del botón para que el usuario sepa que está cargando
+        const btn = document.querySelector('button[onclick="processCheckout()"]');
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = "Procesando...";
+        btn.disabled = true;
+
+        // Recuperamos el token de seguridad de Django
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            // Mandamos los datos al backend usando Fetch API
+            const response = await fetch('/api/process_sale/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ cart: cart })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // ¡Éxito!
+                alert("¡Venta cobrada con éxito!");
+                window.location.reload(); // Recargamos para limpiar el carrito y refrescar el stock visual
+            } else {
+                // Si hubo error de stock u otro
+                alert("Error: " + data.error);
+                btn.innerHTML = textoOriginal;
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert("Error de conexión con el servidor.");
+            btn.innerHTML = textoOriginal;
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

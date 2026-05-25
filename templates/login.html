@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In - SaaS ERP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-cover bg-center bg-no-repeat min-h-screen flex flex-col font-sans"
+      style="background-image: url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070&auto=format&fit=crop');">
+
+    <header class="w-full flex items-center justify-between px-8 py-6 text-gray-900 bg-white/20 backdrop-blur-sm border-b border-white/30">
+        <div class="text-xl font-bold tracking-wider uppercase w-1/3">
+            SaaS ERP
+        </div>
+        <div class="hidden md:flex justify-center items-center w-1/3">
+            <svg class="w-12 h-12 text-blue-700" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 22h20L12 2zm0 3.83L19.17 20H4.83L12 5.83z"/>
+            </svg>
+        </div>
+        <nav class="hidden md:flex items-center justify-end space-x-6 text-sm font-bold tracking-wide w-1/3">
+            <a href="#" class="hover:text-blue-700 transition">HOME</a>
+            <a href="#" class="hover:text-blue-700 transition">ABOUT US</a>
+            <a href="#" class="hover:text-blue-700 transition">CONTACT</a>
+            <a href="{% url 'login' %}" class="border-b-2 border-blue-700 text-blue-700 pb-1">LOG IN</a>
+            <a href="{% url 'register_tenant' %}" class="hover:text-blue-700 transition">SIGN UP</a>
+        </nav>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center px-4 py-12">
+        <div class="bg-slate-900/80 backdrop-blur-md p-10 rounded-3xl shadow-2xl w-full max-w-md border border-white/10">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-light text-white mb-2">Log in</h1>
+            </div>
+
+            {% if form.errors %}
+            <div class="bg-red-500/90 text-white text-sm font-medium p-3 rounded-full mb-6 text-center shadow-md">
+                Usuario o contraseña incorrectos.
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-6">
+                {% csrf_token %}
+
+                <div>
+                    <input type="text" name="username" class="w-full px-6 py-4 rounded-full bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 font-medium transition-all" placeholder="Username or Email" required>
+                </div>
+
+                <div>
+                    <input type="password" name="password" class="w-full px-6 py-4 rounded-full bg-white/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400 font-medium transition-all" placeholder="Password" required>
+                </div>
+
+                <div class="flex items-center justify-between px-2 text-sm">
+                    <label class="flex items-center text-gray-300 cursor-pointer">
+                        <input type="checkbox" class="mr-2 rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500">
+                        Remember Me
+                    </label>
+                    <a href="#" class="text-gray-400 hover:text-white transition">Forgot Password?</a>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full text-white bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-900 font-bold rounded-full text-lg px-5 py-4 text-center shadow-lg transform hover:scale-[1.02] transition-all">
+                        Log in
+                    </button>
+                </div>
+
+                <div class="text-center mt-6 text-sm font-medium text-gray-400">
+                    or <a href="{% url 'register_tenant' %}" class="text-blue-500 hover:text-blue-400 transition">Sign up</a>
+                </div>
+            </form>
+        </div>
+    </main>
+
+</body>
+</html>
