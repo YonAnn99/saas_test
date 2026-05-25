@@ -73,7 +73,8 @@ class Sale(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Venta #{self.id} - {self.customer.name}"
+        customer_name = self.customer.name if self.customer else "Sin cliente"
+        return f"Venta #{self.id} - {customer_name}"
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='items')

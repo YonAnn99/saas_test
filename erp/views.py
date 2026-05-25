@@ -1,3 +1,5 @@
+import uuid
+from django.utils.text import slugify
 import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -106,11 +108,12 @@ def create_purchase_order_api(request):
         # 5. Registramos la salida de dinero en Finanzas como 'gasto'
         FinancialMovement.objects.create(
             tenant=mi_tenant,
+            movement_type='egreso',
             movement_category='gasto',
             amount=total_cost,
+            description=f"Compra de mercancía a {supplier.name}",
             is_cleared=True,
             due_date=timezone.now().date()
-            # Si tu modelo tiene un campo 'description', puedes poner: description=f"Compra de mercancía a {supplier.name}"
         )
         
     return redirect('purchases')
@@ -247,8 +250,12 @@ def process_sale_api(request):
                 FinancialMovement.objects.create(
                     tenant=mi_tenant,
                     sale=nueva_venta,
-                    movement_category='venta', # La categoría que definimos hace unos días
-                    amount=total_final, # Ajusta si tu modelo requiere 'amount' o 'description'
+                    movement_type="ingreso",
+                    movement_category="venta",
+                    amount=total_final,
+                    description=f"Venta #{nueva_venta.id}",
+                    is_cleared=True,
+                    due_date=timezone.now().date(),
                 )
 
             # Si todo salió bien, respondemos con éxito
@@ -323,9 +330,13 @@ def register_tenant_view(request):
             # Creación de la empresa (Tenant) con su rubro
             # Nota: Si aún no agregas 'business_type' a tu modelo Tenant con migraciones,
             # puedes omitirlo aquí temporalmente o agregarlo a tu modelo.
+            # Generamos un slug único a partir del nombre de la empresa
+            slug_base = slugify(company_name)
+            slug_unico = f"{slug_base}-{uuid.uuid4().hex[:6]}"
             nueva_empresa = Tenant.objects.create(
                 name=company_name,
-                plan='basic' # Todos empiezan en el plan básico por defecto
+                slug=slug_unico,
+                plan="basic"
             )
             
             # Enlace intermedio (TenantUser) asignándolo como Administrador de su entorno
